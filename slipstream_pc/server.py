@@ -1,36 +1,27 @@
-import socket
+from config import HOST, PORT
+from network import NetworkServer
+from controller import Controller
 
-HOST = "0.0.0.0"
-PORT = 5000
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.bind((HOST, PORT))
-server.listen(1)
+def main():
+    network = NetworkServer(HOST, PORT)
+    controller = Controller()
 
-print(f"SlipStream server listening on port {PORT}...")
-print("Waiting for phone...")
+    network.start()
 
-while True:
-    conn, address = server.accept()
+    while True:
+        network.wait_for_phone()
 
-    print(f"\nPhone connected: {address}")
-
-    try:
         while True:
-            data = conn.recv(1024)
+            data = network.receive()
 
-            if not data:
+            if data is None:
                 print("Phone disconnected.")
+                network.close_client()
                 break
 
-            message = data.decode("utf-8").strip()
+            controller.process(data)
 
-            print("Received:", message)
 
-    except ConnectionResetError:
-        print("Phone connection lost.")
-
-    finally:
-        conn.close()
-        print("Waiting for phone...")
+if __name__ == "__main__":
+    main()
