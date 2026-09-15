@@ -3,10 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-<<<<<<< HEAD
-=======
-  bluetooth_low_energy_linux
->>>>>>> f2a3eeb41ebbdfef48546e1fd11fc15da6b95f86
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

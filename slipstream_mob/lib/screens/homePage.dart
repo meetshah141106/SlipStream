@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:slipstream_mob/normalComponents/button.dart';
-import 'package:slipstream_mob/testPages/successPage.dart';
 import 'package:slipstream_mob/services/network_service.dart';
+import 'package:slipstream_mob/screens/controllerPage.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -13,46 +12,46 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final NetworkService networkService = NetworkService();
 
-  // Your laptop's IPv4 address
-  final String laptopIp = "192.168.1.38";
+  final TextEditingController ipController =
+      TextEditingController(text: "192.168.1.38");
 
-  // Port used by the Python server
   final int port = 5000;
 
   bool isConnected = false;
   bool isConnecting = false;
 
   Future<void> toggleConnection() async {
-    // If already connected → disconnect
     if (isConnected) {
       await networkService.disconnect();
 
-      if (mounted) {
-        setState(() {
-          isConnected = false;
-        });
+      if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Disconnected from laptop"),
-          ),
-        );
-      }
+      setState(() {
+        isConnected = false;
+      });
 
       return;
     }
 
-    // Prevent multiple connection attempts
-    if (isConnecting) {
+    final ip = ipController.text.trim();
+
+    if (ip.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Enter the PC IP address"),
+        ),
+      );
       return;
     }
+
+    if (isConnecting) return;
 
     setState(() {
       isConnecting = true;
     });
 
     final connected = await networkService.connect(
-      laptopIp,
+      ip,
       port,
     );
 
@@ -64,46 +63,49 @@ class _HomeState extends State<Home> {
     });
 
     if (connected) {
-      // Test message
       networkService.send("Hello from SlipStream");
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Connected to laptop!"),
+          content: Text("Connected to PC"),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Could not connect to laptop"),
+          content: Text("Could not connect to PC"),
         ),
       );
     }
   }
 
-  void sendTestMessage() {
+  void openController(String controllerName) {
     if (!isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Connect to the laptop first"),
+          content: Text("Connect to a PC first"),
         ),
       );
 
       return;
     }
 
-    networkService.send("Test message from Flutter");
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Message sent!"),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ControllerPage(
+          controllerName: controllerName,
+          networkService: networkService,
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
+    ipController.dispose();
     networkService.disconnect();
+
     super.dispose();
   }
 
@@ -114,70 +116,324 @@ class _HomeState extends State<Home> {
 
       appBar: AppBar(
         backgroundColor: Colors.black,
+        elevation: 0,
+
         title: const Text(
-          "Welcome, User",
+          "SlipStream",
           style: TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
 
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            10,
+            20,
+            30,
+          ),
 
-            // Connection status
-            Text(
-              isConnecting
-                  ? "Connecting..."
-                  : isConnected
-                      ? "Connected to Laptop"
-                      : "Not Connected",
-              style: TextStyle(
-                color: isConnected
-                    ? Colors.green
-                    : Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // Welcome
+              const Text(
+                "Welcome",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 6),
 
-            // Connect / Disconnect button
-            ElevatedButton(
-              onPressed: isConnecting
-                  ? null
-                  : toggleConnection,
-              child: Text(
-                isConnecting
-                    ? "Connecting..."
-                    : isConnected
-                        ? "Disconnect"
-                        : "Connect to Laptop",
+              const Text(
+                "Connect to your PC and choose a controller.",
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 15,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 35),
 
-            // Test message button
-            ElevatedButton(
-              onPressed: sendTestMessage,
-              child: const Text(
-                "Send Test Message",
+              // Connect section
+              const Text(
+                "Connect to a PC",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 12),
 
-            // Your existing button
-            MyButton(
-              page: SuccessPage(),
-              text: "Check button",
+              Container(
+                padding: const EdgeInsets.all(18),
+
+                decoration: BoxDecoration(
+                  color: const Color(0xFF151515),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white12,
+                  ),
+                ),
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    const Text(
+                      "IP Address",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    TextField(
+                      controller: ipController,
+
+                      enabled: !isConnected,
+
+                      keyboardType: TextInputType.number,
+
+                      style: const TextStyle(
+                        color: Colors.white,
+                      ),
+
+                      decoration: InputDecoration(
+                        hintText: "192.168.1.38",
+
+                        hintStyle: const TextStyle(
+                          color: Colors.white30,
+                        ),
+
+                        filled: true,
+                        fillColor: Colors.black,
+
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+
+                        contentPadding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    SizedBox(
+                      width: double.infinity,
+
+                      child: ElevatedButton(
+                        onPressed:
+                            isConnecting ? null : toggleConnection,
+
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isConnected
+                              ? Colors.red.shade700
+                              : Colors.white,
+
+                          foregroundColor: isConnected
+                              ? Colors.white
+                              : Colors.black,
+
+                          padding:
+                              const EdgeInsets.symmetric(
+                            vertical: 14,
+                          ),
+
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10),
+                          ),
+                        ),
+
+                        child: Text(
+                          isConnecting
+                              ? "Connecting..."
+                              : isConnected
+                                  ? "Disconnect"
+                                  : "Connect",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    if (isConnected) ...[
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Container(
+                            width: 9,
+                            height: 9,
+
+                            decoration:
+                                const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Text(
+                            "Connected to ${ipController.text}",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 35),
+
+              // Controllers
+              const Text(
+                "Your Controllers",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Racing Controller
+              controllerCard(
+                icon: Icons.sports_motorsports,
+                title: "Racing Controller",
+                subtitle: "Steering • Throttle • Brake",
+                onTap: () {
+                  openController("Racing Controller");
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Game Controller
+              controllerCard(
+                icon: Icons.gamepad_outlined,
+                title: "Game Controller",
+                subtitle: "Standard Gamepad",
+                onTap: () {
+                  openController("Game Controller");
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget controllerCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+
+      child: InkWell(
+        onTap: onTap,
+
+        borderRadius: BorderRadius.circular(16),
+
+        child: Container(
+          padding: const EdgeInsets.all(18),
+
+          decoration: BoxDecoration(
+            color: const Color(0xFF151515),
+
+            borderRadius: BorderRadius.circular(16),
+
+            border: Border.all(
+              color: Colors.white12,
             ),
-          ],
+          ),
+
+          child: Row(
+            children: [
+
+              Container(
+                width: 54,
+                height: 54,
+
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 15),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  children: [
+
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Icon(
+                Icons.chevron_right,
+                color: Colors.white54,
+              ),
+            ],
+          ),
         ),
       ),
     );
