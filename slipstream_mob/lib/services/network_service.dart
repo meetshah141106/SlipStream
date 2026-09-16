@@ -1,70 +1,144 @@
+import 'dart:convert';
 import 'dart:io';
 
 class NetworkService {
-  Socket? _socket;
+  RawDatagramSocket? _socket;
 
-  bool get isConnected => _socket != null;
+  InternetAddress? _laptopAddress;
+  int? _laptopPort;
+
+  // Fixed local UDP port for the phone.
+  static const int localPort = 5001;
+
+  bool get isConnected =>
+      _socket != null &&
+      _laptopAddress != null &&
+      _laptopPort != null;
+
+  // ============================================================
+  // CONNECT
+  // ============================================================
 
   Future<bool> connect(String ip, int port) async {
-    // Close any previous connection first
+    // Close previous UDP socket before creating a new one.
     await disconnect();
 
     try {
-      final socket = await Socket.connect(
-        ip,
-        port,
-        timeout: const Duration(seconds: 5),
+      final address = InternetAddress(ip);
+
+      // Create ONE UDP socket on the fixed phone port.
+      final socket = await RawDatagramSocket.bind(
+        InternetAddress.anyIPv4,
+        localPort,
       );
 
       _socket = socket;
+      _laptopAddress = address;
+      _laptopPort = port;
 
-      print('Connected to laptop: $ip:$port');
+      print('========================================');
+      print('          SLIPSTREAM UDP CONNECTED');
+      print('========================================');
+      print('Laptop IP   : $ip');
+      print('Laptop Port : $port');
+      print('Phone Port  : ${socket.port}');
+      print('========================================');
 
-      // Detect when laptop/server closes the connection
-      socket.done.then((_) {
-        print('Connection closed');
+      // --------------------------------------------------------
+      // CONNECTION TEST
+      // --------------------------------------------------------
 
-        if (_socket == socket) {
-          _socket = null;
-        }
+      final testMessage = jsonEncode({
+        "type": "connection_test",
+        "message": "Hello from SlipStream",
       });
+
+      final result = socket.send(
+        utf8.encode(testMessage),
+        address,
+        port,
+      );
+
+      print(
+        'UDP TEST PACKET SENT: $result bytes',
+      );
 
       return true;
     } catch (e) {
-      print('Connection failed: $e');
+      print('========================================');
+      print('          UDP CONNECTION FAILED');
+      print('========================================');
+      print(e);
+      print('========================================');
+
       _socket = null;
+      _laptopAddress = null;
+      _laptopPort = null;
+
       return false;
     }
   }
 
+  // ============================================================
+  // SEND
+  // ============================================================
+
   void send(String message) {
     final socket = _socket;
+    final address = _laptopAddress;
+    final port = _laptopPort;
 
-    if (socket == null) {
-      print('Not connected');
+    if (socket == null ||
+        address == null ||
+        port == null) {
+      print('UDP NOT CONNECTED');
       return;
     }
 
-    socket.write('$message\n');
+    try {
+      final data = utf8.encode(message);
 
-    print('Sent: $message');
+      final result = socket.send(
+        data,
+        address,
+        port,
+      );
+
+      print(
+        'UDP SENT [$result bytes]: $message',
+      );
+    } catch (e) {
+      print(
+        'UDP SEND ERROR: $e',
+      );
+    }
   }
+
+  // ============================================================
+  // DISCONNECT
+  // ============================================================
 
   Future<void> disconnect() async {
     final socket = _socket;
 
+    _socket = null;
+    _laptopAddress = null;
+    _laptopPort = null;
+
     if (socket == null) {
       return;
     }
 
-    _socket = null;
-
     try {
-      await socket.close();
-    } catch (e) {
-      socket.destroy();
-    }
+      socket.close();
 
-    print('Disconnected from laptop');
+      print(
+        'UDP DISCONNECTED',
+      );
+    } catch (e) {
+      print(
+        'UDP DISCONNECT ERROR: $e',
+      );
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:slipstream_mob/services/network_service.dart';
-import 'package:slipstream_mob/screens/controllerPage.dart';
+import 'package:slipstream_mob/screens/driveController.dart';
+
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -93,7 +94,7 @@ class _HomeState extends State<Home> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ControllerPage(
+        builder: (context) => DriveController(
           controllerName: controllerName,
           networkService: networkService,
         ),
