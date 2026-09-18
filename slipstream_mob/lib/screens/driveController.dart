@@ -412,29 +412,68 @@ class _DriveControllerState extends State<DriveController> {
     final double maxDistance =
         size * 0.20;
 
-    double x =
+    // ============================================================
+    // PHYSICAL / VISUAL POSITION
+    // ============================================================
+    //
+    // Flutter screen coordinates:
+    //
+    // UP   = negative Y
+    // DOWN = positive Y
+    //
+    // This value is used ONLY for the visual knob.
+    // ============================================================
+
+    double physicalX =
         (dx / maxDistance) *
             joystickSensitivity;
 
-    double y =
-        (-dy / maxDistance) *
+    double physicalY =
+        (dy / maxDistance) *
             joystickSensitivity;
 
-    x = x.clamp(-1.0, 1.0);
-    y = y.clamp(-1.0, 1.0);
+    physicalX =
+        physicalX.clamp(-1.0, 1.0);
+
+    physicalY =
+        physicalY.clamp(-1.0, 1.0);
+
+    // ============================================================
+    // VISUAL JOYSTICK
+    // ============================================================
 
     setState(() {
-      stickX = x;
-      stickY = y;
+      stickX = physicalX;
+      stickY = physicalY;
     });
+
+    // ============================================================
+    // PC INPUT
+    // ============================================================
+    //
+    // Use a NEW variable for the inverted Y value.
+    //
+    // physicalY:
+    //   UP   = -
+    //   DOWN = +
+    //
+    // inputY:
+    //   UP   = +
+    //   DOWN = -
+    //
+    // The visual position is NOT changed.
+    // ============================================================
+
+    final double inputX = physicalX;
+    final double inputY = physicalY * -1;
 
     send({
       "type": "right_stick",
       "x": double.parse(
-        x.toStringAsFixed(6),
+        inputX.toStringAsFixed(6),
       ),
       "y": double.parse(
-        y.toStringAsFixed(6),
+        inputY.toStringAsFixed(6),
       ),
     });
   }
@@ -476,7 +515,6 @@ class _DriveControllerState extends State<DriveController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: background,
-
       body: SafeArea(
         child: LayoutBuilder(
           builder: (
@@ -490,9 +528,7 @@ class _DriveControllerState extends State<DriveController> {
                 ),
 
                 Padding(
-                  padding:
-                      const EdgeInsets.all(7),
-
+                  padding: const EdgeInsets.all(7),
                   child: Column(
                     children: [
                       SizedBox(
@@ -503,8 +539,7 @@ class _DriveControllerState extends State<DriveController> {
                       const SizedBox(height: 5),
 
                       Expanded(
-                        child:
-                            buildControllerLayout(
+                        child: buildControllerLayout(
                           constraints,
                         ),
                       ),
@@ -538,12 +573,10 @@ class _DriveControllerState extends State<DriveController> {
 
         Expanded(
           flex: 3,
-
           child: Column(
             children: [
               Expanded(
                 flex: 5,
-
                 child: Center(
                   child: dpad(),
                 ),
@@ -553,7 +586,6 @@ class _DriveControllerState extends State<DriveController> {
 
               Expanded(
                 flex: 6,
-
                 child: Center(
                   child: pedal(
                     title: "BRAKE",
@@ -574,12 +606,10 @@ class _DriveControllerState extends State<DriveController> {
 
         Expanded(
           flex: 5,
-
           child: Column(
             children: [
               Expanded(
                 flex: 5,
-
                 child: steeringControl(),
               ),
 
@@ -587,7 +617,6 @@ class _DriveControllerState extends State<DriveController> {
 
               Expanded(
                 flex: 5,
-
                 child: Center(
                   child: rightJoystick(),
                 ),
@@ -604,12 +633,10 @@ class _DriveControllerState extends State<DriveController> {
 
         Expanded(
           flex: 3,
-
           child: Column(
             children: [
               Expanded(
                 flex: 5,
-
                 child: Center(
                   child: abxy(),
                 ),
@@ -619,7 +646,6 @@ class _DriveControllerState extends State<DriveController> {
 
               Expanded(
                 flex: 6,
-
                 child: Center(
                   child: pedal(
                     title: "GAS",
@@ -670,29 +696,21 @@ class _DriveControllerState extends State<DriveController> {
 
         GestureDetector(
           onTap: calibrateSteering,
-
           child: Container(
             height: 38,
-
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 12,
             ),
-
             decoration: BoxDecoration(
               color: surface,
               borderRadius:
                   BorderRadius.circular(10),
-
               border: Border.all(
                 color: blue.withOpacity(0.25),
               ),
             ),
-
             child: const Row(
-              mainAxisSize:
-                  MainAxisSize.min,
-
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.center_focus_strong,
@@ -741,41 +759,31 @@ class _DriveControllerState extends State<DriveController> {
 
     return SizedBox(
       width: 60,
-
       child: GestureDetector(
         onTapDown: (_) => onDown(),
         onTapUp: (_) => onUp(),
         onTapCancel: onUp,
-
         child: AnimatedContainer(
-          duration:
-              const Duration(
+          duration: const Duration(
             milliseconds: 70,
           ),
-
           height: 40,
-
           decoration: BoxDecoration(
             color: pressed
                 ? blue.withOpacity(0.28)
                 : surface,
-
             borderRadius:
                 BorderRadius.circular(11),
-
             border: Border.all(
               color: pressed
                   ? blue
                   : Colors.white.withOpacity(0.12),
-
               width: pressed ? 1.5 : 1,
             ),
           ),
-
           child: Center(
             child: Text(
               text,
-
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -804,58 +812,44 @@ class _DriveControllerState extends State<DriveController> {
             : "START";
 
     final bool pressed =
-        _pressedButtons.contains(
-      buttonName,
-    );
+        _pressedButtons.contains(buttonName);
 
     return GestureDetector(
       onTapDown: (_) => onDown(),
       onTapUp: (_) => onUp(),
       onTapCancel: onUp,
-
       child: SizedBox(
         width: 45,
         height: 42,
-
         child: Column(
           mainAxisAlignment:
               MainAxisAlignment.center,
-
           children: [
             AnimatedContainer(
-              duration:
-                  const Duration(
+              duration: const Duration(
                 milliseconds: 70,
               ),
-
               width: 45,
               height: 32,
-
               decoration: BoxDecoration(
                 color: pressed
                     ? blue.withOpacity(0.25)
                     : surface,
-
                 borderRadius:
                     BorderRadius.circular(9),
-
                 border: Border.all(
                   color: pressed
                       ? blue
                       : Colors.white.withOpacity(0.12),
-
                   width: pressed ? 1.5 : 1,
                 ),
               ),
-
               child: Center(
                 child: Icon(
                   icon,
-
                   color: pressed
                       ? Colors.white
                       : Colors.white60,
-
                   size: 18,
                 ),
               ),
@@ -865,13 +859,9 @@ class _DriveControllerState extends State<DriveController> {
 
             SizedBox(
               height: 8,
-
               child: Text(
                 label,
-
-                textAlign:
-                    TextAlign.center,
-
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white38,
                   fontSize: 7,
@@ -940,41 +930,30 @@ class _DriveControllerState extends State<DriveController> {
           child: Container(
             width: double.infinity,
             height: double.infinity,
-
-            margin:
-                const EdgeInsets.symmetric(
+            margin: const EdgeInsets.symmetric(
               horizontal: 2,
             ),
-
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 4,
               vertical: 3,
             ),
-
             decoration: BoxDecoration(
               color: surface,
-
               borderRadius:
                   BorderRadius.circular(18),
-
               border: Border.all(
                 color: blue.withOpacity(0.16),
               ),
             ),
-
             child: Column(
               mainAxisAlignment:
                   MainAxisAlignment.center,
-
               children: [
                 SizedBox(
                   height: 15,
-
                   child: Row(
                     mainAxisAlignment:
                         MainAxisAlignment.center,
-
                     children: [
                       const Text(
                         "STEERING",
@@ -992,11 +971,9 @@ class _DriveControllerState extends State<DriveController> {
                         gyroEnabled
                             ? Icons.screen_rotation
                             : Icons.touch_app,
-
                         color: gyroEnabled
                             ? cyan
                             : racingOrange,
-
                         size: 12,
                       ),
                     ],
@@ -1010,70 +987,48 @@ class _DriveControllerState extends State<DriveController> {
                     child: SizedBox(
                       width: wheelSize,
                       height: wheelSize,
-
                       child: Container(
-                        decoration:
-                            BoxDecoration(
-                          shape:
-                              BoxShape.circle,
-
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
                           color: surfaceDark,
-
-                          border:
-                              Border.all(
-                            color:
-                                const Color(
+                          border: Border.all(
+                            color: const Color(
                               0xFF34485B,
                             ),
-
                             width: 3,
                           ),
                         ),
-
                         child: Center(
-                          child:
-                              Transform.rotate(
-                            angle:
-                                steering * 0.9,
-
-                            child:
-                                Container(
+                          child: Transform.rotate(
+                            angle: steering * 0.9,
+                            child: Container(
                               width:
                                   wheelSize * 0.68,
-
                               height:
                                   wheelSize * 0.68,
-
                               decoration:
                                   BoxDecoration(
                                 shape:
                                     BoxShape.circle,
-
                                 border:
                                     Border.all(
                                   color:
                                       Colors.white54,
-
                                   width: 5,
                                 ),
                               ),
-
                               child: Center(
-                                child:
-                                    Container(
+                                child: Container(
                                   width:
                                       wheelSize *
                                           0.16,
-
                                   height:
                                       wheelSize *
                                           0.16,
-
                                   decoration:
                                       BoxDecoration(
                                     shape:
                                         BoxShape.circle,
-
                                     color:
                                         racingOrange
                                             .withOpacity(
@@ -1094,12 +1049,9 @@ class _DriveControllerState extends State<DriveController> {
 
                 SizedBox(
                   height: 13,
-
                   child: Text(
                     "${(steering * 100).round()}%",
-
-                    style:
-                        const TextStyle(
+                    style: const TextStyle(
                       color: Colors.white54,
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
@@ -1180,14 +1132,13 @@ class _DriveControllerState extends State<DriveController> {
 
             decoration: BoxDecoration(
               color: surface,
-
               borderRadius:
                   BorderRadius.circular(
                 width / 2,
               ),
-
               border: Border.all(
-                color: accent.withOpacity(0.40),
+                color:
+                    accent.withOpacity(0.40),
                 width: 2,
               ),
             ),
@@ -1198,7 +1149,6 @@ class _DriveControllerState extends State<DriveController> {
 
                 Text(
                   title,
-
                   style: TextStyle(
                     color: accent,
                     fontSize: 9,
@@ -1220,12 +1170,10 @@ class _DriveControllerState extends State<DriveController> {
 
                     decoration: BoxDecoration(
                       color: surfaceDark,
-
                       borderRadius:
                           BorderRadius.circular(
                         15,
                       ),
-
                       border: Border.all(
                         color: Colors.white12,
                       ),
@@ -1234,7 +1182,6 @@ class _DriveControllerState extends State<DriveController> {
                     child: Stack(
                       alignment:
                           Alignment.bottomCenter,
-
                       children: [
                         FractionallySizedBox(
                           heightFactor: value,
@@ -1247,10 +1194,8 @@ class _DriveControllerState extends State<DriveController> {
                                   accent.withOpacity(
                                 0.28,
                               ),
-
                               borderRadius:
-                                  BorderRadius
-                                      .circular(
+                                  BorderRadius.circular(
                                 15,
                               ),
                             ),
@@ -1258,8 +1203,7 @@ class _DriveControllerState extends State<DriveController> {
                         ),
 
                         Align(
-                          alignment:
-                              Alignment(
+                          alignment: Alignment(
                             0,
                             1 - (value * 2),
                           ),
@@ -1272,9 +1216,7 @@ class _DriveControllerState extends State<DriveController> {
                                 BoxDecoration(
                               shape:
                                   BoxShape.circle,
-
                               color: accent,
-
                               border:
                                   Border.all(
                                 color:
@@ -1290,9 +1232,7 @@ class _DriveControllerState extends State<DriveController> {
 
                 Text(
                   "${(value * 100).round()}%",
-
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: Colors.white54,
                     fontSize: 9,
                   ),
@@ -1307,157 +1247,172 @@ class _DriveControllerState extends State<DriveController> {
     );
   }
 
-// ============================================================
-// D-PAD
-// ============================================================
+  // ============================================================
+  // D-PAD
+  // ============================================================
 
-Widget dpad() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final double available = math.min(
-        constraints.maxWidth,
-        constraints.maxHeight,
-      );
+  Widget dpad() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double available = math.min(
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
 
-      final double size = math.min(
-        available * 0.95,
-        220,
-      );
+        final double size = math.min(
+          available * 0.95,
+          220,
+        );
 
-      final double buttonSize = size * 0.34;
-      final double center = size / 2;
+        final double buttonSize =
+            size * 0.34;
 
-      return SizedBox(
+        final double center =
+            size / 2;
+
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // UP
+              Positioned(
+                left:
+                    center -
+                    buttonSize / 2,
+                top: 4,
+                child: dpadButton(
+                  "UP",
+                  Icons.keyboard_arrow_up,
+                  buttonSize,
+                ),
+              ),
+
+              // LEFT
+              Positioned(
+                left: 4,
+                top:
+                    center -
+                    buttonSize / 2,
+                child: dpadButton(
+                  "LEFT",
+                  Icons.keyboard_arrow_left,
+                  buttonSize,
+                ),
+              ),
+
+              // RIGHT
+              Positioned(
+                right: 4,
+                top:
+                    center -
+                    buttonSize / 2,
+                child: dpadButton(
+                  "RIGHT",
+                  Icons.keyboard_arrow_right,
+                  buttonSize,
+                ),
+              ),
+
+              // DOWN
+              Positioned(
+                left:
+                    center -
+                    buttonSize / 2,
+                bottom: 4,
+                child: dpadButton(
+                  "DOWN",
+                  Icons.keyboard_arrow_down,
+                  buttonSize,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // D-PAD BUTTON
+  // ============================================================
+
+  Widget dpadButton(
+    String direction,
+    IconData icon,
+    double size,
+  ) {
+    final bool pressed =
+        _pressedDpad.contains(direction);
+
+    return GestureDetector(
+      behavior:
+          HitTestBehavior.opaque,
+
+      onTapDown: (_) {
+        dpadPressed(direction);
+      },
+
+      onTapUp: (_) {
+        dpadReleased(direction);
+      },
+
+      onTapCancel: () {
+        dpadReleased(direction);
+      },
+
+      child: AnimatedContainer(
+        duration: const Duration(
+          milliseconds: 70,
+        ),
+
         width: size,
         height: size,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // UP
-            Positioned(
-              left: center - buttonSize / 2,
-              top: 4,
-              child: dpadButton(
-                "UP",
-                Icons.keyboard_arrow_up,
-                buttonSize,
-              ),
-            ),
 
-            // LEFT
-            Positioned(
-              left: 4,
-              top: center - buttonSize / 2,
-              child: dpadButton(
-                "LEFT",
-                Icons.keyboard_arrow_left,
-                buttonSize,
-              ),
-            ),
-
-            // RIGHT
-            Positioned(
-              right: 4,
-              top: center - buttonSize / 2,
-              child: dpadButton(
-                "RIGHT",
-                Icons.keyboard_arrow_right,
-                buttonSize,
-              ),
-            ),
-
-            // DOWN
-            Positioned(
-              left: center - buttonSize / 2,
-              bottom: 4,
-              child: dpadButton(
-                "DOWN",
-                Icons.keyboard_arrow_down,
-                buttonSize,
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-// ============================================================
-// D-PAD BUTTON
-// ============================================================
-
-Widget dpadButton(
-  String direction,
-  IconData icon,
-  double size,
-) {
-  final bool pressed =
-      _pressedDpad.contains(direction);
-
-  return GestureDetector(
-    behavior: HitTestBehavior.opaque,
-
-    onTapDown: (_) {
-      dpadPressed(direction);
-    },
-
-    onTapUp: (_) {
-      dpadReleased(direction);
-    },
-
-    onTapCancel: () {
-      dpadReleased(direction);
-    },
-
-    child: AnimatedContainer(
-      duration: const Duration(
-        milliseconds: 70,
-      ),
-
-      width: size,
-      height: size,
-
-      decoration: BoxDecoration(
-        color: pressed
-            ? blue.withOpacity(0.30)
-            : surfaceLight,
-
-        borderRadius:
-            BorderRadius.circular(28),
-
-        border: Border.all(
+        decoration: BoxDecoration(
           color: pressed
-              ? blue
-              : Colors.white.withOpacity(0.12),
+              ? blue.withOpacity(0.30)
+              : surfaceLight,
 
-          width: pressed ? 2 : 1.5,
+          borderRadius:
+              BorderRadius.circular(28),
+
+          border: Border.all(
+            color: pressed
+                ? blue
+                : Colors.white.withOpacity(
+                    0.12,
+                  ),
+            width: pressed ? 2 : 1.5,
+          ),
+
+          boxShadow: pressed
+              ? [
+                  BoxShadow(
+                    color:
+                        blue.withOpacity(
+                      0.20,
+                    ),
+                    blurRadius: 8,
+                  ),
+                ]
+              : [],
         ),
 
-        boxShadow: pressed
-            ? [
-                BoxShadow(
-                  color: blue.withOpacity(0.20),
-                  blurRadius: 8,
-                ),
-              ]
-            : [],
-      ),
-
-      child: Center(
-        child: Icon(
-          icon,
-
-          size: size * 0.42,
-
-          color: pressed
-              ? Colors.white
-              : Colors.white70,
+        child: Center(
+          child: Icon(
+            icon,
+            size: size * 0.42,
+            color: pressed
+                ? Colors.white
+                : Colors.white70,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   // ============================================================
   // A B X Y
   // ============================================================
@@ -1496,7 +1451,6 @@ Widget dpadButton(
             children: [
               Positioned(
                 top: 0,
-
                 child: gameButton(
                   "Y",
                   Colors.amber,
@@ -1506,11 +1460,9 @@ Widget dpadButton(
 
               Positioned(
                 left: 0,
-
                 top:
                     size / 2 -
                     buttonSize / 2,
-
                 child: gameButton(
                   "X",
                   Colors.blue,
@@ -1520,11 +1472,9 @@ Widget dpadButton(
 
               Positioned(
                 right: 0,
-
                 top:
                     size / 2 -
                     buttonSize / 2,
-
                 child: gameButton(
                   "B",
                   Colors.red,
@@ -1534,7 +1484,6 @@ Widget dpadButton(
 
               Positioned(
                 bottom: 0,
-
                 child: gameButton(
                   "A",
                   Colors.green,
@@ -1574,8 +1523,7 @@ Widget dpadButton(
       },
 
       child: AnimatedContainer(
-        duration:
-            const Duration(
+        duration: const Duration(
           milliseconds: 70,
         ),
 
@@ -1593,7 +1541,6 @@ Widget dpadButton(
             color: pressed
                 ? color
                 : color.withOpacity(0.65),
-
             width: pressed ? 2.5 : 2,
           ),
         ),
@@ -1607,7 +1554,8 @@ Widget dpadButton(
                   ? Colors.white
                   : color,
 
-              fontSize: size * 0.34,
+              fontSize:
+                  size * 0.34,
 
               fontWeight:
                   FontWeight.bold,
@@ -1680,13 +1628,21 @@ Widget dpadButton(
 
                 border: Border.all(
                   color:
-                      purple.withOpacity(0.38),
+                      purple.withOpacity(
+                    0.38,
+                  ),
                   width: 3,
                 ),
               ),
 
               child: Center(
                 child: Transform.translate(
+                  // IMPORTANT:
+                  // stickX/stickY are the PHYSICAL
+                  // screen coordinates.
+                  //
+                  // Therefore the visual knob follows
+                  // the finger naturally.
                   offset: Offset(
                     stickX * travel,
                     stickY * travel,
@@ -1704,23 +1660,21 @@ Widget dpadButton(
                       shape:
                           BoxShape.circle,
 
-                      color: surfaceLight,
+                      color:
+                          surfaceLight,
 
                       border:
                           Border.all(
                         color:
                             Colors.white38,
-
                         width: 3,
                       ),
                     ),
 
                     child: Icon(
                       Icons.gamepad_rounded,
-
                       color:
                           Colors.white54,
-
                       size:
                           size * 0.18,
                     ),
@@ -1777,7 +1731,6 @@ Widget dpadButton(
 
             Text(
               "CONNECTED",
-
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 8,
@@ -1796,76 +1749,225 @@ Widget dpadButton(
 // BACKGROUND
 // ================================================================
 
-class _Background
-    extends StatelessWidget {
+class _Background extends StatelessWidget {
   const _Background();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return CustomPaint(
-      painter:
-          _BackgroundPainter(),
+      painter: _BackgroundPainter(),
     );
   }
 }
 
-class _BackgroundPainter
-    extends CustomPainter {
+class _BackgroundPainter extends CustomPainter {
   @override
   void paint(
     Canvas canvas,
     Size size,
   ) {
-    // Very subtle blue/navy grid.
-    // Kept intentionally faint so the controls remain
-    // the focus.
+    // ============================================================
+    // BASE GRADIENT
+    // ============================================================
 
-    final Paint diagonalPaint = Paint()
-      ..color =
-          const Color(0xFF142234)
-      ..style =
-          PaintingStyle.stroke
+    final Paint backgroundPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF0A1020),
+          Color(0xFF10182B),
+          Color(0xFF0B1424),
+        ],
+        stops: [
+          0.0,
+          0.5,
+          1.0,
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          0,
+          size.width,
+          size.height,
+        ),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.width,
+        size.height,
+      ),
+      backgroundPaint,
+    );
+
+    // ============================================================
+    // BLUE AMBIENT LIGHT
+    // ============================================================
+
+    final Paint blueGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(
+          -0.75,
+          -0.85,
+        ),
+        radius: 0.9,
+        colors: [
+          const Color(
+            0xFF315FA8,
+          ).withOpacity(0.16),
+
+          const Color(
+            0xFF315FA8,
+          ).withOpacity(0.04),
+
+          Colors.transparent,
+        ],
+        stops: const [
+          0.0,
+          0.45,
+          1.0,
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          0,
+          size.width,
+          size.height,
+        ),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.width,
+        size.height,
+      ),
+      blueGlow,
+    );
+
+    // ============================================================
+    // PURPLE AMBIENT LIGHT
+    // ============================================================
+
+    final Paint purpleGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(
+          0.85,
+          0.75,
+        ),
+        radius: 0.85,
+        colors: [
+          const Color(
+            0xFF6D4FD3,
+          ).withOpacity(0.12),
+
+          const Color(
+            0xFF6D4FD3,
+          ).withOpacity(0.035),
+
+          Colors.transparent,
+        ],
+        stops: const [
+          0.0,
+          0.45,
+          1.0,
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          0,
+          size.width,
+          size.height,
+        ),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.width,
+        size.height,
+      ),
+      purpleGlow,
+    );
+
+    // ============================================================
+    // SUBTLE GRID
+    // ============================================================
+
+    final Paint gridPaint = Paint()
+      ..color = const Color(
+        0xFF6D8DB8,
+      ).withOpacity(0.045)
+      ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
+    const double gridSize = 55;
+
+    // Vertical lines
     for (
-      double x = -size.height;
-      x < size.width;
-      x += 100
+      double x = 0;
+      x <= size.width;
+      x += gridSize
     ) {
       canvas.drawLine(
         Offset(x, 0),
-        Offset(
-          x + size.height,
-          size.height,
-        ),
-        diagonalPaint,
+        Offset(x, size.height),
+        gridPaint,
       );
     }
 
-    final Paint horizontalPaint =
-        Paint()
-          ..color =
-              const Color(0xFF101C2A)
-          ..style =
-              PaintingStyle.stroke
-          ..strokeWidth = 1;
-
+    // Horizontal lines
     for (
       double y = 0;
-      y < size.height;
-      y += 70
+      y <= size.height;
+      y += gridSize
     ) {
       canvas.drawLine(
         Offset(0, y),
-        Offset(
-          size.width,
-          y,
-        ),
-        horizontalPaint,
+        Offset(size.width, y),
+        gridPaint,
       );
     }
+
+    // ============================================================
+    // SOFT VIGNETTE
+    // ============================================================
+
+    final Paint vignettePaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 0.8,
+        colors: [
+          Colors.transparent,
+          Colors.black.withOpacity(0.10),
+        ],
+        stops: const [
+          0.45,
+          1.0,
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          0,
+          size.width,
+          size.height,
+        ),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.width,
+        size.height,
+      ),
+      vignettePaint,
+    );
   }
 
   @override
