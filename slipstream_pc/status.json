@@ -1,0 +1,15 @@
+{
+  "server_running": true,
+  "phone_connected": false,
+  "phone_ip": null,
+  "phone_port": null,
+  "controller_active": false,
+  "inputs": {
+    "steering": 0.0,
+    "gas": 0.0,
+    "brake": 0.0,
+    "right_stick_x": 0.0,
+    "right_stick_y": 0.0,
+    "last_button": "None"
+  }
+}
