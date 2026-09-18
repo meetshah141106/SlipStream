@@ -1,11 +1,11 @@
 {
   "server_running": true,
-  "phone_connected": false,
-  "phone_ip": null,
-  "phone_port": null,
-  "controller_active": false,
+  "phone_connected": true,
+  "phone_ip": "192.168.1.36",
+  "phone_port": 5001,
+  "controller_active": true,
   "inputs": {
-    "steering": 0.0,
+    "steering": -0.813616,
     "gas": 0.0,
     "brake": 0.0,
     "right_stick_x": 0.0,
