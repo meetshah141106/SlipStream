@@ -12,20 +12,24 @@ function JoystickWidget({
     Math.min(1, Number(y) || 0)
   );
 
-  /*
-   * Keep the knob inside the circular area.
-   */
-  const MAX_OFFSET = 62;
+  // Maximum distance the knob can move
+  const MAX_OFFSET = 45;
 
-  const offsetX = joystickX * MAX_OFFSET;
-  const offsetY = joystickY * MAX_OFFSET;
+  // X: positive = right
+  const offsetX =
+    joystickX * MAX_OFFSET;
+
+  // Y: positive = UP
+  // CSS positive Y = DOWN, so invert it
+  const offsetY =
+    -joystickY * MAX_OFFSET;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
 
       {/* HEADER */}
 
-      <div className="mb-2">
+      <div className="mb-2 shrink-0">
         <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/35">
           Right Stick
         </div>
@@ -37,23 +41,23 @@ function JoystickWidget({
 
         <div className="relative aspect-square h-[min(100%,155px)] max-h-[155px] w-auto">
 
-          {/* Outer ring */}
+          {/* OUTER RING */}
 
           <div className="absolute inset-0 rounded-full border border-blue-500/40 bg-blue-500/[0.025]" />
 
-          {/* Inner rings */}
+          {/* INNER RING */}
 
           <div className="absolute inset-[18%] rounded-full border border-white/[0.06]" />
 
           <div className="absolute inset-[36%] rounded-full border border-white/[0.05]" />
 
-          {/* Crosshair */}
+          {/* CROSSHAIR */}
 
           <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-blue-400/15" />
 
           <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-blue-400/15" />
 
-          {/* Direction indicators */}
+          {/* DIRECTION MARKERS */}
 
           <div className="absolute left-1/2 top-2 h-1 w-1 -translate-x-1/2 rounded-full bg-blue-400/50" />
 
@@ -85,7 +89,8 @@ function JoystickWidget({
 
       {/* VALUES */}
 
-      <div className="mt-2 flex justify-center gap-5 font-mono text-[10px] text-white/35">
+      <div className="mt-2 flex shrink-0 justify-center gap-5 font-mono text-[10px] text-white/35">
+
         <span>
           X:{" "}
           <span className="text-white/65">
@@ -99,6 +104,7 @@ function JoystickWidget({
             {joystickY.toFixed(2)}
           </span>
         </span>
+
       </div>
 
     </div>
