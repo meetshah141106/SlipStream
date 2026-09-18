@@ -406,29 +406,32 @@ class _XboxDrivingControllerState
     final double maxDistance =
         size * 0.20;
 
-    double x =
+    double physicalX =
         (dx / maxDistance) *
             joystickSensitivity;
 
-    double y =
-        (-dy / maxDistance) *
+    double physicalY =
+        (dy / maxDistance) *
             joystickSensitivity;
 
-    x = x.clamp(-1.0, 1.0);
-    y = y.clamp(-1.0, 1.0);
+    physicalX = physicalX.clamp(-1.0, 1.0);
+    physicalY = physicalY.clamp(-1.0, 1.0);
+
+    // stickX:  LEFT = -1, RIGHT = +1  (same as screen)
+    // stickY:  UP   = +1, DOWN  = -1  (game convention)
 
     setState(() {
-      stickX = x;
-      stickY = y;
+      stickX = physicalX;
+      stickY = -physicalY;
     });
 
     send({
       'type': 'right_stick',
       'x': double.parse(
-        x.toStringAsFixed(6),
+        stickX.toStringAsFixed(6),
       ),
       'y': double.parse(
-        y.toStringAsFixed(6),
+        stickY.toStringAsFixed(6),
       ),
     });
   }

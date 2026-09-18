@@ -64,9 +64,11 @@ class RightJoystick extends StatelessWidget {
               ),
               child: Center(
                 child: Transform.translate(
+                  // stickY uses game convention (up = +1).
+                  // Negate to convert to screen coordinates.
                   offset: Offset(
                     stickX * travel,
-                    stickY * travel,
+                    -stickY * travel,
                   ),
                   child: Container(
                     width: size * 0.44,

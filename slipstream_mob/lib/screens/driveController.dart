@@ -442,38 +442,29 @@ class _DriveControllerState extends State<DriveController> {
     // VISUAL JOYSTICK
     // ============================================================
 
+    // ============================================================
+    // GAME CONVENTION
+    // ============================================================
+    //
+    // stickX:  LEFT = -1, RIGHT = +1  (same as screen)
+    // stickY:  UP   = +1, DOWN  = -1  (inverted from screen)
+    //
+    // The visual offset negates stickY to convert back
+    // to screen coordinates so the knob follows the finger.
+    // ============================================================
+
     setState(() {
       stickX = physicalX;
-      stickY = physicalY;
+      stickY = -physicalY;
     });
-
-    // ============================================================
-    // PC INPUT
-    // ============================================================
-    //
-    // Use a NEW variable for the inverted Y value.
-    //
-    // physicalY:
-    //   UP   = -
-    //   DOWN = +
-    //
-    // inputY:
-    //   UP   = +
-    //   DOWN = -
-    //
-    // The visual position is NOT changed.
-    // ============================================================
-
-    final double inputX = physicalX;
-    final double inputY = physicalY * -1;
 
     send({
       "type": "right_stick",
       "x": double.parse(
-        inputX.toStringAsFixed(6),
+        stickX.toStringAsFixed(6),
       ),
       "y": double.parse(
-        inputY.toStringAsFixed(6),
+        stickY.toStringAsFixed(6),
       ),
     });
   }
@@ -1637,15 +1628,12 @@ class _DriveControllerState extends State<DriveController> {
 
               child: Center(
                 child: Transform.translate(
-                  // IMPORTANT:
-                  // stickX/stickY are the PHYSICAL
-                  // screen coordinates.
-                  //
-                  // Therefore the visual knob follows
-                  // the finger naturally.
+                  // stickY is in game convention (up = +1).
+                  // Negate it here to convert back to screen
+                  // coordinates so the knob follows the finger.
                   offset: Offset(
                     stickX * travel,
-                    stickY * travel,
+                    -stickY * travel,
                   ),
 
                   child: Container(
