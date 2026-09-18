@@ -1,24 +1,18 @@
 import { useEffect, useState } from "react";
 
 import BorderGlow from "../components/BorderGlow";
-import InputBar from "../components/InputBar";
 import SteeringGauge from "../components/SteeringGauge";
+import JoystickWidget from "../components/JoystickWidget";
+import ABXYButtons from "../components/ABXYButtons";
 import ThemeToggle from "../components/ThemeToggle";
 
-
 function Dashboard() {
-
-  /* ==========================================================
-     LIVE STATUS
-  ========================================================== */
-
   const [status, setStatus] = useState({
     server_running: false,
     phone_connected: false,
     phone_ip: null,
     phone_port: null,
     controller_active: false,
-
     inputs: {
       steering: 0,
       gas: 0,
@@ -29,193 +23,187 @@ function Dashboard() {
     },
   });
 
+  const [buttonStates, setButtonStates] = useState({
+    A: false,
+    B: false,
+    X: false,
+    Y: false,
+  });
 
-  /* ==========================================================
-     RECEIVE DATA FROM PYSIDE6
-  ========================================================== */
+  const [activity, setActivity] = useState([]);
 
   useEffect(() => {
-
     const handleStatus = (event) => {
+      const nextStatus = event.detail;
 
-      if (!event.detail) {
-        return;
+      setStatus(nextStatus);
+
+      const lastButton =
+        nextStatus.inputs?.last_button || "None";
+
+      if (
+        lastButton !== "None" &&
+        lastButton.includes("•")
+      ) {
+        const parts = lastButton.split("•");
+
+        const name = parts[0].trim();
+        const action = parts[1]?.trim() || "";
+
+        if (
+          ["A", "B", "X", "Y"].includes(name)
+        ) {
+          const pressed =
+            action === "PRESSED";
+
+          setButtonStates((previous) => ({
+            ...previous,
+            [name]: pressed,
+          }));
+        }
+
+        setActivity((previous) => {
+          const item = {
+            name,
+            action,
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }
+            ),
+          };
+
+          return [
+            item,
+            ...previous,
+          ].slice(0, 5);
+        });
       }
-
-      setStatus(event.detail);
-
     };
-
 
     window.addEventListener(
       "slipstream-status",
       handleStatus
     );
 
-
     return () => {
-
       window.removeEventListener(
         "slipstream-status",
         handleStatus
       );
-
     };
-
   }, []);
 
-
-  /* ==========================================================
-     INPUT VALUES
-  ========================================================== */
+  const inputs = status.inputs || {};
 
   const steering =
-    Number(status.inputs?.steering) || 0;
+    Number(inputs.steering) || 0;
 
   const gas =
-    Number(status.inputs?.gas) || 0;
+    Number(inputs.gas) || 0;
 
   const brake =
-    Number(status.inputs?.brake) || 0;
+    Number(inputs.brake) || 0;
 
   const rightStickX =
-    Number(status.inputs?.right_stick_x) || 0;
+    Number(inputs.right_stick_x) || 0;
 
   const rightStickY =
-    Number(status.inputs?.right_stick_y) || 0;
+    Number(inputs.right_stick_y) || 0;
 
-
-  /* ==========================================================
-     CONNECTION STATE
-  ========================================================== */
-
-  const serverRunning =
-    Boolean(status.server_running);
-
-  const phoneConnected =
+  const connected =
     Boolean(status.phone_connected);
 
   const controllerActive =
     Boolean(status.controller_active);
 
-
-  const phoneIP =
-    status.phone_ip || "—";
-
-  const phonePort =
-    status.phone_port || "—";
-
-
-  /* ==========================================================
-     ACTIVITY
-  ========================================================== */
-
-  const lastButton =
-    status.inputs?.last_button || "None";
-
-  const hasActivity =
-    lastButton !== "None";
-
-
   return (
-    <div className="min-h-screen bg-[#111214] text-white">
+    <div className="flex h-screen overflow-hidden bg-[#111214] text-white">
 
-      <div className="flex min-h-screen">
+      {/* ================================================== */}
+      {/* SIDEBAR */}
+      {/* ================================================== */}
 
+      <aside className="flex h-screen w-[225px] shrink-0 flex-col border-r border-white/8 bg-[#151619]">
 
-        {/* =====================================================
-            SIDEBAR
-        ===================================================== */}
+        <div className="px-6 pt-7">
 
-        <aside className="relative w-[220px] shrink-0 border-r border-white/8 bg-[#151619] p-5">
-
-          <div className="mb-10">
-
-            <div className="text-xl font-semibold tracking-tight">
-              SlipStream
-            </div>
-
-            <div className="mt-1 text-xs text-white/35">
-              PC Controller
-            </div>
-
+          <div className="text-[22px] font-semibold tracking-tight">
+            Slip<span className="text-blue-500">Stream</span>
           </div>
 
+          <div className="mt-1 text-xs text-white/30">
+            PC Controller
+          </div>
 
-          <nav className="space-y-2">
+        </div>
 
-            <div className="rounded-xl bg-white/[0.07] px-4 py-3 text-sm font-medium text-white">
-              Dashboard
-            </div>
+        <nav className="mt-9 px-4">
 
-            <div className="px-4 py-3 text-sm text-white/35">
-              Settings
-            </div>
+          <button className="w-full rounded-xl bg-white/[0.07] px-4 py-3 text-left text-sm font-medium text-white">
+            Dashboard
+          </button>
 
-          </nav>
+          <button className="mt-2 w-full rounded-xl px-4 py-3 text-left text-sm text-white/35 transition hover:bg-white/[0.04] hover:text-white/70">
+            Settings
+          </button>
 
+        </nav>
 
-          <div className="absolute bottom-5 left-5 text-xs text-white/25">
+        <div className="mt-auto px-6 pb-6">
+
+          <div className="font-mono text-[10px] text-white/25">
             v1.0.0
           </div>
 
-        </aside>
+          <div className="mt-3 flex items-center gap-2 text-xs text-white/45">
 
+            <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
 
+            Server Running
 
-        {/* =====================================================
-            MAIN CONTENT
-        ===================================================== */}
+          </div>
 
-        <main className="min-w-0 flex-1 p-7">
+        </div>
 
+      </aside>
 
-          {/* ===================================================
-              HEADER
-          =================================================== */}
+      {/* ================================================== */}
+      {/* MAIN */}
+      {/* ================================================== */}
 
-          <header className="mb-7 flex items-center justify-between">
+      <main className="min-w-0 flex-1 overflow-hidden px-5 py-5">
+
+        <div className="flex h-full min-h-0 flex-col">
+
+          {/* HEADER */}
+
+          <header className="mb-4 flex shrink-0 items-start justify-between">
 
             <div>
 
-              <h1 className="text-2xl font-semibold tracking-tight">
+              <h1 className="text-[23px] font-semibold tracking-tight">
                 Dashboard
               </h1>
 
-              <p className="mt-1 text-sm text-white/40">
+              <p className="mt-1 text-xs text-white/30">
                 Monitor your SlipStream controller
               </p>
 
             </div>
 
+            <div className="flex items-center gap-3">
 
-            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.025] px-4 py-2 text-xs text-white/60">
 
+                <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.45)]" />
 
-              {/* SERVER STATUS */}
-
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm">
-
-                <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    serverRunning
-                      ? "bg-green-400"
-                      : "bg-red-400"
-                  }`}
-                />
-
-                <span className="text-white/70">
-
-                  {serverRunning
-                    ? "Server Running"
-                    : "Server Stopped"}
-
-                </span>
+                Server Running
 
               </div>
-
-
-              {/* THEME */}
 
               <ThemeToggle />
 
@@ -223,298 +211,228 @@ function Dashboard() {
 
           </header>
 
+          {/* ================================================== */}
+          {/* TOP STATUS */}
+          {/* ================================================== */}
 
-
-          {/* ===================================================
-              STATUS CARDS
-          =================================================== */}
-
-          <div className="mb-6 grid grid-cols-3 gap-5">
-
-
-            {/* PHONE */}
+          <section className="mb-4 grid shrink-0 grid-cols-3 gap-4">
 
             <StatusCard
-              title="Phone"
-              value={
-                phoneConnected
-                  ? "Connected"
-                  : "Disconnected"
-              }
+              label="Phone"
+              active={connected}
+              activeText="Connected"
+              inactiveText="Disconnected"
               detail={
-                phoneConnected
-                  ? "Phone connected"
+                connected
+                  ? `${status.phone_ip || "—"}:${status.phone_port || "—"}`
                   : "Waiting for connection"
-              }
-              dot={
-                phoneConnected
-                  ? "bg-green-400"
-                  : "bg-white/25"
               }
             />
 
-
-            {/* CONTROLLER */}
-
             <StatusCard
-              title="Controller"
-              value={
-                controllerActive
-                  ? "Active"
-                  : "Inactive"
-              }
+              label="Controller"
+              active={controllerActive}
+              activeText="Active"
+              inactiveText="Inactive"
               detail={
                 controllerActive
                   ? "Receiving input"
                   : "No input received"
               }
-              dot={
-                controllerActive
-                  ? "bg-green-400"
-                  : "bg-white/25"
-              }
             />
-
-
-            {/* PROTOCOL */}
 
             <StatusCard
-              title="Protocol"
-              value="UDP"
-              detail="Port 5005"
-              dot="bg-blue-400"
+              label="Protocol"
+              active
+              activeText="UDP"
+              inactiveText="UDP"
+              detail={`Port ${status.phone_port || "5005"}`}
+              blue
             />
 
-          </div>
+          </section>
 
+          {/* ================================================== */}
+          {/* LIVE INPUT */}
+          {/* ================================================== */}
 
+          <BorderGlow
+            className="mb-4 min-h-0 flex-1"
+            backgroundColor="#151619"
+            borderRadius={20}
+            glowRadius={30}
+            glowIntensity={0.55}
+            animated={false}
+          >
 
-          {/* ===================================================
-              LIVE INPUT
-          =================================================== */}
+            <section className="flex h-full min-h-0 flex-col p-4">
 
-          <section className="mb-6">
+              {/* LIVE INPUT HEADER */}
 
-            <BorderGlow
-              backgroundColor="#17181b"
-              borderRadius={18}
-              glowRadius={28}
-              glowIntensity={0.75}
-              coneSpread={22}
-              colors={[
-                "#38bdf8",
-                "#c084fc",
-                "#22c55e",
-              ]}
-              fillOpacity={0.18}
-            >
+              <div className="mb-3 flex shrink-0 items-center justify-between">
 
-              <div className="p-6">
+                <div>
 
+                  <h2 className="text-base font-semibold">
+                    Live Input
+                  </h2>
 
-                {/* LIVE INPUT HEADER */}
-
-                <div className="mb-6 flex items-center justify-between">
-
-                  <div>
-
-                    <h2 className="text-lg font-semibold">
-                      Live Input
-                    </h2>
-
-                    <p className="mt-1 text-xs text-white/35">
-                      Real-time controller state
-                    </p>
-
-                  </div>
-
-
-                  <div
-                    className={`rounded-full border px-3 py-1 text-xs ${
-                      controllerActive
-                        ? "border-green-400/20 bg-green-400/10 text-green-500"
-                        : "border-white/10 bg-white/[0.04] text-white/40"
-                    }`}
-                  >
-
-                    {controllerActive
-                      ? "Input Active"
-                      : "No Input"}
-
-                  </div>
+                  <p className="mt-0.5 text-[11px] text-white/30">
+                    Real-time controller state
+                  </p>
 
                 </div>
 
+                <div className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-[10px] text-white/40">
 
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      controllerActive
+                        ? "bg-blue-500 shadow-[0_0_7px_rgba(59,130,246,.6)]"
+                        : "bg-white/25"
+                    }`}
+                  />
 
-                {/* INPUT CONTENT */}
-
-                <div className="grid grid-cols-[330px_1fr] items-start gap-10">
-
-
-                  {/* STEERING */}
-
-                  <div>
-
-                    <div className="mb-3 text-xs uppercase tracking-wider text-white/35">
-                      Steering
-                    </div>
-
-                    <SteeringGauge
-                      value={steering}
-                    />
-
-                  </div>
-
-
-
-                  {/* INPUT BARS */}
-
-                  <div className="space-y-6 pt-2">
-
-                    <InputBar
-                      label="Gas"
-                      value={gas}
-                      type="gas"
-                    />
-
-                    <InputBar
-                      label="Brake"
-                      value={brake}
-                      type="brake"
-                    />
-
-                    <InputBar
-                      label="Right Stick X"
-                      value={rightStickX}
-                      type="bipolar"
-                    />
-
-                    <InputBar
-                      label="Right Stick Y"
-                      value={rightStickY}
-                      type="bipolar"
-                    />
-
-                  </div>
+                  {controllerActive
+                    ? "LIVE"
+                    : "NO INPUT"}
 
                 </div>
 
               </div>
 
-            </BorderGlow>
+              {/* ================================================= */}
+              {/* GAS + BRAKE — FULL WIDTH */}
+              {/* ================================================= */}
 
-          </section>
+              <div className="mb-3 shrink-0 rounded-xl border border-white/[0.07] bg-white/[0.02] px-5 py-4">
 
+                <ThrottleBar
+                  label="Gas"
+                  value={gas}
+                  type="gas"
+                />
 
+                <div className="my-4 h-px bg-white/[0.05]" />
 
-          {/* ===================================================
-              LOWER CARDS
-          =================================================== */}
+                <ThrottleBar
+                  label="Brake"
+                  value={brake}
+                  type="brake"
+                />
 
-          <div className="grid grid-cols-2 gap-5">
+              </div>
 
+              {/* ================================================= */}
+              {/* BOTTOM WIDGETS */}
+              {/* ================================================= */}
 
-            {/* =================================================
-                CONNECTION
-            ================================================= */}
+              <div className="grid min-h-0 flex-1 grid-cols-[1.45fr_1fr_1fr] gap-3">
+
+                {/* STEERING */}
+
+                <div className="min-h-0 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+
+                  <SteeringGauge
+                    value={steering}
+                  />
+
+                </div>
+
+                {/* JOYSTICK */}
+
+                <div className="min-h-0 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+
+                  <JoystickWidget
+                    x={rightStickX}
+                    y={rightStickY}
+                  />
+
+                </div>
+
+                {/* BUTTONS */}
+
+                <div className="min-h-0 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+
+                  <ABXYButtons
+                    buttonStates={buttonStates}
+                  />
+
+                </div>
+
+              </div>
+
+            </section>
+
+          </BorderGlow>
+
+          {/* ================================================== */}
+          {/* BOTTOM */}
+          {/* ================================================== */}
+
+          <section className="grid h-[150px] shrink-0 grid-cols-[1fr_1fr] gap-4">
+
+            {/* CONNECTION */}
 
             <BorderGlow
-              backgroundColor="#17181b"
+              backgroundColor="#151619"
               borderRadius={18}
               glowRadius={25}
-              glowIntensity={0.7}
-              coneSpread={22}
-              colors={[
-                "#38bdf8",
-                "#c084fc",
-                "#22c55e",
-              ]}
-              fillOpacity={0.15}
+              glowIntensity={0.35}
             >
 
-              <div className="p-6">
-
+              <div className="h-full p-4">
 
                 <div className="flex items-center justify-between">
 
                   <div>
 
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-sm font-semibold">
                       Connection
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/30">
+                    <p className="mt-0.5 text-[10px] text-white/25">
                       Current network connection
                     </p>
 
                   </div>
 
-
-                  <div
-                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 ${
-                      phoneConnected
-                        ? "border-green-400/20 bg-green-400/10"
-                        : "border-white/8 bg-white/[0.03]"
-                    }`}
-                  >
-
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        phoneConnected
-                          ? "bg-green-400"
-                          : "bg-white/25"
-                      }`}
-                    />
-
-                    <span
-                      className={`text-[10px] uppercase tracking-wider ${
-                        phoneConnected
-                          ? "text-green-500"
-                          : "text-white/35"
-                      }`}
-                    >
-
-                      {phoneConnected
-                        ? "Online"
-                        : "Offline"}
-
-                    </span>
-
+                  <div className="rounded-full border border-white/10 px-3 py-1 text-[10px] text-white/35">
+                    {connected
+                      ? "ONLINE"
+                      : "OFFLINE"}
                   </div>
 
                 </div>
 
+                <div className="mt-4 grid grid-cols-4 gap-4">
 
-
-                <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-5">
-
-                  <ConnectionItem
+                  <InfoItem
                     label="Status"
                     value={
-                      phoneConnected
+                      connected
                         ? "Connected"
                         : "Disconnected"
                     }
                   />
 
-                  <ConnectionItem
-                    label="Controller"
+                  <InfoItem
+                    label="IP Address"
                     value={
-                      controllerActive
-                        ? "Active"
-                        : "Inactive"
+                      status.phone_ip || "—"
                     }
                   />
 
-                  <ConnectionItem
-                    label="IP Address"
-                    value={phoneIP}
+                  <InfoItem
+                    label="Port"
+                    value={
+                      status.phone_port || "—"
+                    }
                   />
 
-                  <ConnectionItem
-                    label="Port"
-                    value={phonePort}
+                  <InfoItem
+                    label="Protocol"
+                    value="UDP"
                   />
 
                 </div>
@@ -523,67 +441,69 @@ function Dashboard() {
 
             </BorderGlow>
 
-
-
-            {/* =================================================
-                RECENT ACTIVITY
-            ================================================= */}
+            {/* RECENT ACTIVITY */}
 
             <BorderGlow
-              backgroundColor="#17181b"
+              backgroundColor="#151619"
               borderRadius={18}
               glowRadius={25}
-              glowIntensity={0.7}
-              coneSpread={22}
-              colors={[
-                "#38bdf8",
-                "#c084fc",
-                "#22c55e",
-              ]}
-              fillOpacity={0.15}
+              glowIntensity={0.35}
             >
 
-              <div className="p-6">
-
+              <div className="h-full overflow-hidden p-4">
 
                 <div className="flex items-center justify-between">
 
                   <div>
 
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-sm font-semibold">
                       Recent Activity
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/30">
+                    <p className="mt-0.5 text-[10px] text-white/25">
                       Latest controller events
                     </p>
 
                   </div>
 
-
-                  <span className="text-[10px] uppercase tracking-wider text-white/20">
-                    Live
+                  <span className="text-[10px] text-blue-400/60">
+                    LIVE
                   </span>
 
                 </div>
 
+                <div className="mt-3 space-y-1">
 
+                  {activity.length === 0 ? (
 
-                <div className="mt-6 space-y-3">
-
-                  {hasActivity ? (
-
-                    <ActivityItem
-                      title={lastButton}
-                      detail="Latest controller event"
-                    />
+                    <div className="rounded-lg border border-white/[0.05] px-3 py-2.5 text-[11px] text-white/25">
+                      No controller activity
+                    </div>
 
                   ) : (
 
-                    <ActivityItem
-                      title="No controller activity"
-                      detail="Waiting for input events"
-                    />
+                    activity.map(
+                      (item, index) => (
+                        <div
+                          key={`${item.time}-${index}`}
+                          className="flex items-center justify-between border-b border-white/[0.04] py-1.5 text-[10px]"
+                        >
+
+                          <span className="text-white/60">
+                            {item.name}
+                          </span>
+
+                          <span className="text-white/30">
+                            {item.action}
+                          </span>
+
+                          <span className="font-mono text-white/20">
+                            {item.time}
+                          </span>
+
+                        </div>
+                      )
+                    )
 
                   )}
 
@@ -593,9 +513,111 @@ function Dashboard() {
 
             </BorderGlow>
 
-          </div>
+          </section>
 
-        </main>
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+
+/* ====================================================== */
+/* STATUS CARD */
+/* ====================================================== */
+
+function StatusCard({
+  label,
+  active,
+  activeText,
+  inactiveText,
+  detail,
+  blue = false,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.09] bg-[#151619] px-4 py-3">
+
+      <div className="text-[10px] uppercase tracking-[0.12em] text-white/30">
+        {label}
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            active
+              ? blue
+                ? "bg-blue-500"
+                : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,.45)]"
+              : "bg-white/25"
+          }`}
+        />
+
+        <span className="text-sm font-semibold">
+          {active
+            ? activeText
+            : inactiveText}
+        </span>
+
+      </div>
+
+      <div className="mt-1 text-[10px] text-white/25">
+        {detail}
+      </div>
+
+    </div>
+  );
+}
+
+
+/* ====================================================== */
+/* THROTTLE BAR */
+/* ====================================================== */
+
+function ThrottleBar({
+  label,
+  value,
+  type,
+}) {
+  const percentage = Math.max(
+    0,
+    Math.min(
+      100,
+      Number(value || 0) * 100
+    )
+  );
+
+  const isGas = type === "gas";
+
+  return (
+    <div>
+
+      <div className="mb-2 flex items-center justify-between">
+
+        <span className="text-sm font-medium text-white/70">
+          {label}
+        </span>
+
+        <span className="font-mono text-xs text-white/45">
+          {Math.round(percentage)}%
+        </span>
+
+      </div>
+
+      <div className="h-[10px] overflow-hidden rounded-full bg-white/[0.055]">
+
+        <div
+          className={`h-full rounded-full transition-[width] duration-75 ease-out ${
+            isGas
+              ? "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,.35)]"
+              : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,.3)]"
+          }`}
+          style={{
+            width: `${percentage}%`,
+          }}
+        />
 
       </div>
 
@@ -604,132 +626,27 @@ function Dashboard() {
 }
 
 
+/* ====================================================== */
+/* INFO ITEM */
+/* ====================================================== */
 
-/* =============================================================
-   STATUS CARD
-============================================================= */
-
-function StatusCard({
-  title,
-  value,
-  detail,
-  dot,
-}) {
-
-  return (
-
-    <BorderGlow
-      backgroundColor="#17181b"
-      borderRadius={16}
-      glowRadius={22}
-      glowIntensity={0.65}
-      coneSpread={22}
-      colors={[
-        "#38bdf8",
-        "#c084fc",
-        "#22c55e",
-      ]}
-      fillOpacity={0.12}
-    >
-
-      <div className="p-5">
-
-        <div className="text-xs uppercase tracking-wider text-white/30">
-          {title}
-        </div>
-
-
-        <div className="mt-3 flex items-center gap-2">
-
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${dot}`}
-          />
-
-          <span className="text-base font-medium">
-            {value}
-          </span>
-
-        </div>
-
-
-        <div className="mt-1 text-xs text-white/30">
-          {detail}
-        </div>
-
-      </div>
-
-    </BorderGlow>
-
-  );
-}
-
-
-
-/* =============================================================
-   CONNECTION ITEM
-============================================================= */
-
-function ConnectionItem({
+function InfoItem({
   label,
   value,
 }) {
-
   return (
-
     <div>
 
-      <div className="text-[10px] uppercase tracking-wider text-white/25">
+      <div className="text-[9px] uppercase tracking-[0.1em] text-white/25">
         {label}
       </div>
 
-      <div className="mt-1.5 font-mono text-sm text-white/65">
+      <div className="mt-1 truncate font-mono text-[11px] text-white/65">
         {value}
       </div>
 
     </div>
-
   );
 }
-
-
-
-/* =============================================================
-   ACTIVITY ITEM
-============================================================= */
-
-function ActivityItem({
-  title,
-  detail,
-}) {
-
-  return (
-
-    <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4">
-
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.04]">
-
-        <span className="h-2 w-2 rounded-full bg-green-400" />
-
-      </div>
-
-
-      <div className="min-w-0">
-
-        <div className="text-sm text-white/50">
-          {title}
-        </div>
-
-        <div className="mt-0.5 text-xs text-white/20">
-          {detail}
-        </div>
-
-      </div>
-
-    </div>
-
-  );
-
-}
-
 
 export default Dashboard;

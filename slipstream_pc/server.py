@@ -17,6 +17,18 @@ from status import (
 )
 
 
+# ============================================================
+# PHONE CONNECTION TIMEOUT
+#
+# This is intentionally longer than controller timeout.
+#
+# The phone must stop sending ALL communication for this long
+# before we consider the phone disconnected.
+# ============================================================
+
+PHONE_TIMEOUT = 5.0
+
+
 def main():
 
     network = NetworkServer(
@@ -61,38 +73,25 @@ def main():
         last_button=last_button,
     )
 
-    # Time of the last actual controller packet.
-    last_packet_time = None
-
     try:
 
         while True:
 
             data = network.receive()
 
-            # ====================================================
+            # =================================================
             # CONTROLLER DATA RECEIVED
-            # ====================================================
+            # =================================================
 
             if data is not None:
 
-                last_packet_time = time.monotonic()
-
-                # ------------------------------------------------
-                # PROCESS CONTROLLER
-                # ------------------------------------------------
-
                 controller.process(data)
-
-                # ------------------------------------------------
-                # READ PACKET TYPE
-                # ------------------------------------------------
 
                 message_type = data.get("type")
 
-                # =================================================
+                # ---------------------------------------------
                 # STEERING
-                # =================================================
+                # ---------------------------------------------
 
                 if message_type == "steering":
 
@@ -118,9 +117,9 @@ def main():
                         ),
                     )
 
-                # =================================================
+                # ---------------------------------------------
                 # GAS
-                # =================================================
+                # ---------------------------------------------
 
                 elif message_type == "gas":
 
@@ -146,9 +145,9 @@ def main():
                         ),
                     )
 
-                # =================================================
+                # ---------------------------------------------
                 # BRAKE
-                # =================================================
+                # ---------------------------------------------
 
                 elif message_type == "brake":
 
@@ -171,12 +170,12 @@ def main():
                         min(
                             1.0,
                             brake,
-                        ),
+                        )
                     )
 
-                # =================================================
+                # ---------------------------------------------
                 # RIGHT STICK
-                # =================================================
+                # ---------------------------------------------
 
                 elif message_type == "right_stick":
 
@@ -224,9 +223,9 @@ def main():
                         ),
                     )
 
-                # =================================================
+                # ---------------------------------------------
                 # BUTTON
-                # =================================================
+                # ---------------------------------------------
 
                 elif message_type == "button":
 
@@ -254,9 +253,9 @@ def main():
                             f"{name} • RELEASED"
                         )
 
-                # =================================================
-                # DPAD
-                # =================================================
+                # ---------------------------------------------
+                # D-PAD
+                # ---------------------------------------------
 
                 elif message_type == "dpad":
 
@@ -284,9 +283,9 @@ def main():
                             f"D-Pad {direction} • RELEASED"
                         )
 
-                # =================================================
+                # ---------------------------------------------
                 # PHONE INFORMATION
-                # =================================================
+                # ---------------------------------------------
 
                 phone_ip = None
                 phone_port = None
@@ -301,9 +300,9 @@ def main():
                         network.client_address[1]
                     )
 
-                # =================================================
-                # WRITE STATUS
-                # =================================================
+                # ---------------------------------------------
+                # WRITE LIVE STATUS
+                # ---------------------------------------------
 
                 write_status(
                     server_running=True,
@@ -319,34 +318,97 @@ def main():
                     last_button=last_button,
                 )
 
-            # ====================================================
+            # =================================================
             # NO CONTROLLER DATA
-            # ====================================================
+            # =================================================
 
             else:
 
-                # Only apply the timeout after actual controller
-                # data has been received.
+                # ---------------------------------------------
+                # CONTROLLER TIMEOUT
+                #
+                # IMPORTANT:
+                # This does NOT disconnect the phone.
+                # ---------------------------------------------
 
                 if (
                     network.controller_active
-                    and last_packet_time is not None
+                    and network.last_controller_packet_time
+                    is not None
                 ):
 
-                    elapsed = (
+                    controller_elapsed = (
                         time.monotonic()
-                        - last_packet_time
+                        - network.last_controller_packet_time
                     )
 
-                    if elapsed >= CONTROLLER_TIMEOUT:
+                    if (
+                        controller_elapsed
+                        >= CONTROLLER_TIMEOUT
+                    ):
+
+                        controller.reset()
+
+                        network.mark_controller_inactive()
+
+                        steering = 0.0
+                        gas = 0.0
+                        brake = 0.0
+                        right_stick_x = 0.0
+                        right_stick_y = 0.0
+                        last_button = "None"
+
+                        phone_ip = None
+                        phone_port = None
+
+                        if network.client_address is not None:
+
+                            phone_ip = (
+                                network.client_address[0]
+                            )
+
+                            phone_port = (
+                                network.client_address[1]
+                            )
+
+                        write_status(
+                            server_running=True,
+                            phone_connected=network.client_connected,
+                            phone_ip=phone_ip,
+                            phone_port=phone_port,
+                            controller_active=False,
+                            steering=steering,
+                            gas=gas,
+                            brake=brake,
+                            right_stick_x=right_stick_x,
+                            right_stick_y=right_stick_y,
+                            last_button=last_button,
+                        )
+
+                # ---------------------------------------------
+                # PHONE TIMEOUT
+                #
+                # Only disconnect when absolutely no UDP
+                # communication has been received.
+                # ---------------------------------------------
+
+                if (
+                    network.client_connected
+                    and network.last_packet_time
+                    is not None
+                ):
+
+                    phone_elapsed = (
+                        time.monotonic()
+                        - network.last_packet_time
+                    )
+
+                    if phone_elapsed >= PHONE_TIMEOUT:
 
                         controller.reset()
 
                         network.mark_disconnected()
 
-                        last_packet_time = None
-
-                        # Reset displayed inputs
                         steering = 0.0
                         gas = 0.0
                         brake = 0.0

@@ -4,13 +4,6 @@ function SteeringGauge({ value = 0 }) {
     Math.min(1, Number(value) || 0)
   );
 
-  /*
-    Steering:
-      -1.00 = far left
-       0.00 = center
-      +1.00 = far right
-  */
-
   const angle = 270 + steering * 70;
 
   const centerX = 200;
@@ -38,42 +31,38 @@ function SteeringGauge({ value = 0 }) {
         ? "LEFT"
         : "RIGHT";
 
-
   return (
-    <div className="relative w-full">
+    <div className="flex h-full min-h-0 flex-col">
 
-      {/* ==================================================
-          VALUE
-      ================================================== */}
+      {/* HEADER */}
 
-      <div className="mb-2 text-center">
+      <div className="shrink-0 text-[11px] font-medium uppercase tracking-[0.16em] text-white/35">
+        Steering
+      </div>
 
-        <div className="font-mono text-[32px] font-semibold tracking-tight text-white">
+      {/* VALUE */}
+
+      <div className="mt-1 shrink-0 text-center">
+
+        <div className="font-mono text-[28px] font-semibold tracking-tight text-white">
           {steering.toFixed(2)}
         </div>
 
-        <div className="mt-0.5 text-[11px] uppercase tracking-[0.22em] text-white/30">
+        <div className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-white/30">
           {status}
         </div>
 
       </div>
 
+      {/* GAUGE */}
 
-      {/* ==================================================
-          GAUGE
-      ================================================== */}
-
-      <div className="w-full">
+      <div className="min-h-0 flex-1 overflow-hidden">
 
         <svg
           viewBox="0 0 400 250"
-          className="h-auto w-full"
+          className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
         >
-
-          {/* =================================================
-              OUTER GAUGE
-          ================================================= */}
 
           <path
             d="M 40 185 A 160 160 0 0 1 360 185"
@@ -83,11 +72,6 @@ function SteeringGauge({ value = 0 }) {
             strokeLinecap="round"
           />
 
-
-          {/* =================================================
-              BLUE GAUGE BACKGROUND
-          ================================================= */}
-
           <path
             d="M 40 185 A 160 160 0 0 1 360 185"
             fill="none"
@@ -95,11 +79,6 @@ function SteeringGauge({ value = 0 }) {
             strokeWidth="7"
             strokeLinecap="round"
           />
-
-
-          {/* =================================================
-              BLUE GAUGE ARC
-          ================================================= */}
 
           <path
             d="M 40 185 A 160 160 0 0 1 360 185"
@@ -113,11 +92,6 @@ function SteeringGauge({ value = 0 }) {
                 "drop-shadow(0 0 5px rgba(37,99,235,0.28))",
             }}
           />
-
-
-          {/* =================================================
-              TICKS
-          ================================================= */}
 
           <line
             x1="40"
@@ -164,12 +138,7 @@ function SteeringGauge({ value = 0 }) {
             strokeWidth="2"
           />
 
-
-          {/* =================================================
-              NEEDLE
-              No CSS transition.
-              Moves immediately with the live value.
-          ================================================= */}
+          {/* NEEDLE */}
 
           <line
             x1={centerX}
@@ -185,11 +154,6 @@ function SteeringGauge({ value = 0 }) {
             }}
           />
 
-
-          {/* =================================================
-              NEEDLE END
-          ================================================= */}
-
           <circle
             cx={needleX}
             cy={needleY}
@@ -201,10 +165,7 @@ function SteeringGauge({ value = 0 }) {
             }}
           />
 
-
-          {/* =================================================
-              CENTER HUB
-          ================================================= */}
+          {/* CENTER */}
 
           <circle
             cx={centerX}
@@ -226,10 +187,7 @@ function SteeringGauge({ value = 0 }) {
             fill="#2563eb"
           />
 
-
-          {/* =================================================
-              SCALE
-          ================================================= */}
+          {/* SCALE */}
 
           <text
             x="40"

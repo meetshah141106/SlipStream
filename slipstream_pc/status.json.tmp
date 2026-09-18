@@ -1,8 +1,8 @@
 {
   "server_running": true,
-  "phone_connected": true,
-  "phone_ip": "192.168.1.39",
-  "phone_port": 5001,
+  "phone_connected": false,
+  "phone_ip": null,
+  "phone_port": null,
   "controller_active": false,
   "inputs": {
     "steering": 0.0,

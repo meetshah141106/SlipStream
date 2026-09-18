@@ -1,5 +1,6 @@
 import json
 import socket
+import time
 
 
 class NetworkServer:
@@ -20,16 +21,18 @@ class NetworkServer:
         # Most recent phone address
         self.client_address = None
 
-        # Whether we have received a phone packet
+        # Whether the phone has recently communicated
         self.client_connected = False
 
-        # Becomes True only after actual controller JSON
+        # Becomes True after actual controller JSON
         # has been received.
         self.controller_active = False
 
-    # ============================================================
-    # START
-    # ============================================================
+        # Time of the most recent packet of ANY kind.
+        self.last_packet_time = None
+
+        # Time of the most recent controller packet.
+        self.last_controller_packet_time = None
 
     def start(self):
         """Create and bind the UDP socket."""
@@ -62,10 +65,6 @@ class NetworkServer:
         print("Status   : WAITING FOR PHONE")
         print("===================================")
 
-    # ============================================================
-    # RECEIVE
-    # ============================================================
-
     def receive(self):
         """
         Receive one UDP packet.
@@ -92,9 +91,17 @@ class NetworkServer:
             print("Network error:", e)
             return None
 
-        # --------------------------------------------------------
-        # PHONE DETECTED
-        # --------------------------------------------------------
+        # ----------------------------------------------------
+        # ANY UDP PACKET MEANS THE PHONE IS ALIVE
+        # ----------------------------------------------------
+
+        now = time.monotonic()
+
+        self.last_packet_time = now
+
+        # ----------------------------------------------------
+        # PHONE CONNECTION
+        # ----------------------------------------------------
 
         if (
             not self.client_connected
@@ -111,9 +118,9 @@ class NetworkServer:
             )
             print("-----------------------------------")
 
-        # --------------------------------------------------------
-        # DECODE UTF-8
-        # --------------------------------------------------------
+        # ----------------------------------------------------
+        # DECODE
+        # ----------------------------------------------------
 
         try:
             text = raw_data.decode("utf-8").strip()
@@ -125,17 +132,17 @@ class NetworkServer:
         if not text:
             return None
 
-        # --------------------------------------------------------
+        # ----------------------------------------------------
         # HANDSHAKE
-        # --------------------------------------------------------
+        # ----------------------------------------------------
 
         if text == "Hello from SlipStream":
             print("Handshake received.")
             return None
 
-        # --------------------------------------------------------
-        # JSON CONTROLLER DATA
-        # --------------------------------------------------------
+        # ----------------------------------------------------
+        # JSON
+        # ----------------------------------------------------
 
         try:
             data = json.loads(text)
@@ -144,14 +151,18 @@ class NetworkServer:
             print(
                 f"Invalid JSON received: {e}"
             )
+
             print(
                 f"Raw packet: {raw_data!r}"
             )
+
             return None
 
-        # --------------------------------------------------------
-        # CONTROLLER ACTIVE
-        # --------------------------------------------------------
+        # ----------------------------------------------------
+        # CONTROLLER ACTIVITY
+        # ----------------------------------------------------
+
+        self.last_controller_packet_time = now
 
         if not self.controller_active:
 
@@ -162,10 +173,6 @@ class NetworkServer:
             print("-----------------------------------")
 
         return data
-
-    # ============================================================
-    # DISCONNECT
-    # ============================================================
 
     def mark_disconnected(self):
         """Mark the phone as disconnected."""
@@ -181,11 +188,24 @@ class NetworkServer:
 
         self.client_connected = False
         self.controller_active = False
+
         self.client_address = None
 
-    # ============================================================
-    # CLOSE
-    # ============================================================
+        self.last_packet_time = None
+        self.last_controller_packet_time = None
+
+    def mark_controller_inactive(self):
+        """Mark controller input as inactive without disconnecting phone."""
+
+        if self.controller_active:
+
+            print("-----------------------------------")
+            print("CONTROLLER INACTIVE")
+            print("-----------------------------------")
+
+        self.controller_active = False
+
+        self.last_controller_packet_time = None
 
     def close(self):
         """Close the UDP socket."""
@@ -203,3 +223,6 @@ class NetworkServer:
         self.client_connected = False
         self.controller_active = False
         self.client_address = None
+
+        self.last_packet_time = None
+        self.last_controller_packet_time = None
